@@ -29,7 +29,7 @@ object TrainSemiCRF {
     
     // read all data
     val modelPath = "/tmp/cprod_all_iob.crf"
-    val path = "/Users/katrintomanek/dev/cprod/training_small.iob"
+    val path = "/Users/katrintomanek/dev/cprod/training.iob"
 
     val data = helpers.readIOBData(path)
     println("all data: " + data.length)

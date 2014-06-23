@@ -46,8 +46,16 @@ object helpers {
   def makeSegmentation(ex: Example[IndexedSeq[String], IndexedSeq[IndexedSeq[String]]]): Segmentation[String, String] = {
     val labels = ex.label
     val words = ex.features.map(_ apply 0)
+    for(w<-words) {
+      if (w==null || w.isEmpty()) {
+        return null
+      }
+    }
     assert(labels.length == words.length)
     val out = new ArrayBuffer[(String, Span)]()
+    
+    
+    
     var start = labels.length
     var i = 0
     while (i < labels.length) {
