@@ -12,7 +12,7 @@ import epic.corpora.CONLLSequenceReader
 
 object helpers {
 
-   def  write(x: AnyRef, path: String) {
+  def write(x: AnyRef, path: String) {
     val output = new ObjectOutputStream(new FileOutputStream(path))
     output.writeObject(x)
     output.close()
@@ -24,9 +24,9 @@ object helpers {
     input.close()
     obj.asInstanceOf[A]
   }
-  
-    def readIOBData(path: String): IndexedSeq[Segmentation[String, String]] = {
-    println("Preparing training data...")
+
+  def readIOBData(path: String): IndexedSeq[Segmentation[String, String]] = {
+    println("Preparing data...")
     val stream = new FileInputStream(path)
     val dataset = new ArrayBuffer[Segmentation[String, String]]()
     for (el <- CONLLSequenceReader.readTrain(stream, " ").toIndexedSeq) {
@@ -35,27 +35,26 @@ object helpers {
         println("\tskipping null line.." + el)
       } else {
         dataset += (seg)
+        //println(seg)
       }
     }
     dataset.toIndexedSeq
   }
-  
-   /**
+
+  /**
    * replaces empty words when presents this leads to IndexOutOfBoundsException during feature extraction
    */
   def makeSegmentation(ex: Example[IndexedSeq[String], IndexedSeq[IndexedSeq[String]]]): Segmentation[String, String] = {
     val labels = ex.label
     val words = ex.features.map(_ apply 0)
-    for(w<-words) {
-      if (w==null || w.isEmpty()) {
+    for (w <- words) {
+      if (w == null || w.isEmpty()) {
         return null
       }
     }
     assert(labels.length == words.length)
     val out = new ArrayBuffer[(String, Span)]()
-    
-    
-    
+
     var start = labels.length
     var i = 0
     while (i < labels.length) {
@@ -74,12 +73,12 @@ object helpers {
         case 'I' =>
           if (start >= i) {
             start = i
-          //} else if (labels(start) != l) {//TODO has to be the first char!
-          } 
-          //else if (labels(start)(0)!=l(0)){
-           // out += (labels(start).replaceAll(".-", "").intern -> Span(start, i))
-           // start = i
-          //} // else, still in a field, do nothing.
+            //} else if (labels(start) != l) {//TODO has to be the first char!
+          }
+        //else if (labels(start)(0)!=l(0)){
+        // out += (labels(start).replaceAll(".-", "").intern -> Span(start, i))
+        // start = i
+        //} // else, still in a field, do nothing.
         case _ =>
           sys.error("weird label?!?" + l)
       }
@@ -94,5 +93,11 @@ object helpers {
     Segmentation(out, words, ex.id)
   }
 
+
+  
+  def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
+    val p = new java.io.PrintWriter(f)
+    try { op(p) } finally { p.close() }
+  }
 
 }
