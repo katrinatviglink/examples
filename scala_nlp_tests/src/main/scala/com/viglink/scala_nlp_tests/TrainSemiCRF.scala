@@ -97,7 +97,8 @@ object TrainSemiCRF {
   def getFeaturizer(data: IndexedSeq[Segmentation[String, String]], outsideSymbol: String) = {
     val counts: Counter2[String, String, Double] = Counter2.count(data.map(_.asFlatTaggedSequence(outsideSymbol)).map { seg => seg.label zip seg.words }.flatten).mapValues(_.toDouble)
     //testfeatures.productMentionFeats[String](counts)
-    testfeatures.testFeaturizer[String](counts)
+    //testfeatures.testFeaturizer[String](counts)
+    testfeatures.productMentionFeats(counts)
   }
 
   def evalModel(train: IndexedSeq[Segmentation[String, String]], test: IndexedSeq[Segmentation[String, String]], myCRF: SemiCRF[String, String]) {
