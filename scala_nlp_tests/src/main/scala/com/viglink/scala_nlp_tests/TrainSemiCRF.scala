@@ -21,14 +21,17 @@ import java.io.ObjectInputStream
 import java.io.FileOutputStream
 import breeze.linalg.Counter2
 import java.util.ArrayList
+import epic.sequences.SegmentationEval.Stats
 
 object TrainSemiCRF {
 
   def main(args: Array[String]): Unit = {
 
-    val doTraining = false
-    val useDefaultFeatures = true
-    val modelPath = "/tmp/scala.mod"
+    val doTraining = true
+    val useDefaultFeatures = false
+    val modelPath = "/tmp/cprod/scala_train_feats.mod"
+    val showOutput = false
+    val predOut = "/tmp/cprod/scala_test_feat_pred"
 
     // read all data (shuffle and split)
     /*
@@ -65,10 +68,10 @@ object TrainSemiCRF {
     }
 
     // eval
-    //evalModel(train, test, myCRF)
+   // evalModel(train, test, myCRF)
 
     // predict
-    predict(test, myCRF,"/tmp/scala_pred")
+    predict(test, myCRF, showOutput, predOut)
   }
 
   def trainModel(train: IndexedSeq[Segmentation[String, String]], useDefaultFeatures: Boolean, modelPath: String): SemiCRF[String, String] = {
@@ -117,7 +120,7 @@ object TrainSemiCRF {
     println("Perf on train set: " + evTrain)
   }
 
-  def predict(test: IndexedSeq[Segmentation[String, String]], myCRF: SemiCRF[String, String], outpath: String) {
+  def predict(test: IndexedSeq[Segmentation[String, String]], myCRF: SemiCRF[String, String], showOutput: Boolean, outpath: String) {
     println("----------------------")
     var buf = new ArrayBuffer[String]()
 
@@ -125,25 +128,51 @@ object TrainSemiCRF {
     // show predictions containing at least one mention
     //ArrayList
     for (ex <- test) {
-      val seq = myCRF.bestSequence(ex.features)
+      val guess = myCRF.bestSequence(ex.words, ex.id + "-guess")
       val words = ex.words
-      val labels = seq.label
-      val c = words.zip(labels).map { case (x, y) => (x + " " + y._1) }
+      val labels = guess.label
+      val c = words.zip(guess.asBIOSequence("O").label).map { case (x, y) => (x + " " + y.toString()(0)) }
       buf.appendAll(c)
       buf.append("")
 
-      if (ex.asFlatTaggedSequence("O").label.contains("B") || ex.asFlatTaggedSequence("O").label.contains("I")) {
+      if (showOutput && (ex.asFlatTaggedSequence("O").label.contains("B") || ex.asFlatTaggedSequence("O").label.contains("I"))) {
         println("\tTRUE: " + ex.render("O"))
         // predict
 
-        println("\tPRED: " + seq.render("O"))
-        println("\t" + SegmentationEval.evaluateExample(Set("O"), seq, ex))
+        println("\tPRED: " + guess.render("O"))
+        println("\t" + SegmentationEval.evaluateExample(Set("O"), guess, ex))
         println("\n")
       }
     }
 
+    /*
+    // TODO re-eval
+    println("epic style eval running...")
+    val evalStats = test.par.aggregate(new Stats(0, 0, 0))({ (stats, gold) =>
+      val guess = myCRF.bestSequence(gold.words, gold.id + "-guess")
+
+      val myStats = SegmentationEval.evaluateExample(Set("O"), guess, gold)
+      stats + myStats
+    }, { _ + _ })
+    println("reeval during predict: " + evalStats)
+    // TODO re-eval
+
+    println("loop style eval running...")
+    var stats = new Stats(0, 0, 0)
+    for (i <- 0 to test.length - 1) {
+      val gold = test(i)
+      val guess = myCRF.bestSequence(gold.words, gold.id + "-guess")
+      val st = SegmentationEval.evaluateExample(Set("O"), guess, gold)
+      stats += st
+    }
+    println("reeval during predict: " + evalStats)
+    // TODO re-eval
+     * 
+     */
+
     // write to file
     if (outpath != null && !outpath.isEmpty()) {
+      println("Writing predictions in IOB format to: " + outpath)
       helpers.printToFile(new File(outpath))(p => {
         buf.foreach(p.println)
       })
