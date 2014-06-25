@@ -9,10 +9,11 @@ object Evaluate {
 
     val showExamples = true
 
-    val golddataPath = "/Users/katrintomanek/dev/data/CPROD/CPROD1.0/experiment/test.iob"
+   // val golddataPath = "/Users/katrintomanek/dev/data/CPROD/CPROD1.0/experiment/test.iob"
+      val golddataPath = "/tmp/cprod/malled_test_pred"
     val golddata = helpers.readIOBData(golddataPath)
 
-    val testdataPath = "/tmp/cprod/scala_test_feat_pred"
+    val testdataPath = "/tmp/cprod/scala_test_pred"
     val testdata = helpers.readIOBData(testdataPath)
 
     //Predef.assert(testdata.length == golddata.length)
@@ -29,7 +30,7 @@ object Evaluate {
       if (showExamples) {
         val goldEx = golddata(i)
         val testEx = testdata(i)
-        if (goldEx.asFlatTaggedSequence("O").label.contains("B") || goldEx.asFlatTaggedSequence("O").label.contains("I")) {
+        if (goldEx.asFlatTaggedSequence("O").label.contains("B") || testEx.asFlatTaggedSequence("O").label.contains("B")) {
           println("\tTRUE: " + goldEx.render("O"))
           // predict
 

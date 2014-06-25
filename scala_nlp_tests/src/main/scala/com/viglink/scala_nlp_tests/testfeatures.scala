@@ -4,6 +4,7 @@ import epic.features.WordFeaturizer
 import epic.features.SurfaceFeaturizer
 import breeze.linalg.Counter2
 import epic.features.BrownClusters
+import epic.features.VigLinkWordPropertyFeaturizer
 
 object testfeatures {
 
@@ -25,22 +26,24 @@ object testfeatures {
 
   def productMentionFeats[L](counts: Counter2[L, String, Double]) = {
     val dsl = new WordFeaturizer.DSL[L](counts) with SurfaceFeaturizer.DSL with BrownClusters.DSL
+    //with  VigLinkWordPropertyFeaturizer.DSL[L](counts)
     import dsl._
 
     (
       unigrams(word, 2)
-      + unigrams(brownClusters(9, 15), 2)
-      + unigrams(clss, 1)
-      //        + unigrams(shape, 2)
-      + bigrams(clss, 1)
-      // + bigrams(tagDict, 2)
-      // + bigrams(shape, 1)
-      //        + shape(-1) * shape * shape(1)
-      + prefixes()
-      + suffixes()
-      //        + unigrams(props, 2)
-      //        + bigrams(props, 1)
-      + unigrams(props, 1))
+        + unigrams(brownClusters(9,15), 2)
+        + unigrams(clss, 1)
+//        + unigrams(shape, 2)
+        + bigrams(clss, 1)
+        // + bigrams(tagDict, 2)
+        // + bigrams(shape, 1)
+//        + shape(-1) * shape * shape(1)
+        + prefixes()
+        + suffixes()
+//        + unigrams(props, 2)
+//        + bigrams(props, 1)
+      + unigrams(props, 1)
+      )
   }
 
 }

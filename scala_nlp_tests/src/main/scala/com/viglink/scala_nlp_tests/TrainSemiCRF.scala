@@ -23,36 +23,23 @@ import breeze.linalg.Counter2
 import java.util.ArrayList
 import epic.sequences.SegmentationEval.Stats
 
+
 object TrainSemiCRF {
 
   def main(args: Array[String]): Unit = {
 
+    // configurations
     val doTraining = true
-    val useDefaultFeatures = false
-    val modelPath = "/tmp/cprod/scala_train_feats.mod"
-    val showOutput = false
-    val predOut = "/tmp/cprod/scala_test_feat_pred"
-
-    // read all data (shuffle and split)
-    /*
-    val path = "/Users/katrintomanek/dev/cprod/training.iob"
-    val data = helpers.readIOBData(path)
-    println("all data: " + data.length)
-    val r: Random = new Random(100)
-    val shuffledData = r.shuffle(data)
-    val num = data.length
-    val per = 2 / 3
-    val train = shuffledData.slice(0, num / 2)
-    val test = shuffledData.slice(num / 2, num)
-    */
+    val useDefaultFeatures = true
+    val modelPath = "/tmp/cprod/scala_train_zz.mod"
+    val showOutput = true
+    val predOut = "/tmp/cprod/scala_test_pred_zz"
 
     // read training and testing data
     val traindataPath = "/Users/katrintomanek/dev/data/CPROD/CPROD1.0/experiment/train.ftd.iob"
     val testdataPath = "/Users/katrintomanek/dev/data/CPROD/CPROD1.0/experiment/test.ftd.iob"
-
     val train = helpers.readIOBData(traindataPath)
     val test = helpers.readIOBData(testdataPath)
-
     println("training size: " + train.length)
     println("testing size: " + test.length)
 
@@ -68,15 +55,16 @@ object TrainSemiCRF {
     }
 
     // eval
-   // evalModel(train, test, myCRF)
+    evalModel(train, test, myCRF)
 
     // predict
-    predict(test, myCRF, showOutput, predOut)
+    //predict(test, myCRF, showOutput, predOut)
   }
 
   def trainModel(train: IndexedSeq[Segmentation[String, String]], useDefaultFeatures: Boolean, modelPath: String): SemiCRF[String, String] = {
     println("Training model...")
     val opti: OptParams = OptParams()
+    
     val cache = new CacheBroker()
     val t1 = System.currentTimeMillis()
 
@@ -108,7 +96,8 @@ object TrainSemiCRF {
 
   def getFeaturizer(data: IndexedSeq[Segmentation[String, String]], outsideSymbol: String) = {
     val counts: Counter2[String, String, Double] = Counter2.count(data.map(_.asFlatTaggedSequence(outsideSymbol)).map { seg => seg.label zip seg.words }.flatten).mapValues(_.toDouble)
-    testfeatures.productMentionFeats[String](counts)
+    //testfeatures.productMentionFeats[String](counts)
+    testfeatures.testFeaturizer[String](counts)
   }
 
   def evalModel(train: IndexedSeq[Segmentation[String, String]], test: IndexedSeq[Segmentation[String, String]], myCRF: SemiCRF[String, String]) {
@@ -121,6 +110,7 @@ object TrainSemiCRF {
   }
 
   def predict(test: IndexedSeq[Segmentation[String, String]], myCRF: SemiCRF[String, String], showOutput: Boolean, outpath: String) {
+    val t1 = System.currentTimeMillis();
     println("----------------------")
     var buf = new ArrayBuffer[String]()
 
@@ -129,11 +119,13 @@ object TrainSemiCRF {
     //ArrayList
     for (ex <- test) {
       val guess = myCRF.bestSequence(ex.words, ex.id + "-guess")
-      val words = ex.words
-      val labels = guess.label
-      val c = words.zip(guess.asBIOSequence("O").label).map { case (x, y) => (x + " " + y.toString()(0)) }
-      buf.appendAll(c)
-      buf.append("")
+      if (outpath != null && !outpath.isEmpty()) {
+        val words = ex.words
+        val labels = guess.label
+        val c = words.zip(guess.asBIOSequence("O").label).map { case (x, y) => (x + " " + y.toString()(0)) }
+        buf.appendAll(c)
+        buf.append("")
+      }
 
       if (showOutput && (ex.asFlatTaggedSequence("O").label.contains("B") || ex.asFlatTaggedSequence("O").label.contains("I"))) {
         println("\tTRUE: " + ex.render("O"))
@@ -145,31 +137,6 @@ object TrainSemiCRF {
       }
     }
 
-    /*
-    // TODO re-eval
-    println("epic style eval running...")
-    val evalStats = test.par.aggregate(new Stats(0, 0, 0))({ (stats, gold) =>
-      val guess = myCRF.bestSequence(gold.words, gold.id + "-guess")
-
-      val myStats = SegmentationEval.evaluateExample(Set("O"), guess, gold)
-      stats + myStats
-    }, { _ + _ })
-    println("reeval during predict: " + evalStats)
-    // TODO re-eval
-
-    println("loop style eval running...")
-    var stats = new Stats(0, 0, 0)
-    for (i <- 0 to test.length - 1) {
-      val gold = test(i)
-      val guess = myCRF.bestSequence(gold.words, gold.id + "-guess")
-      val st = SegmentationEval.evaluateExample(Set("O"), guess, gold)
-      stats += st
-    }
-    println("reeval during predict: " + evalStats)
-    // TODO re-eval
-     * 
-     */
-
     // write to file
     if (outpath != null && !outpath.isEmpty()) {
       println("Writing predictions in IOB format to: " + outpath)
@@ -179,6 +146,21 @@ object TrainSemiCRF {
 
     }
 
+    val t2 = System.currentTimeMillis();
+    println("Time for predicton: " + (t2 - t1) / 1000)
   }
+
+  // read all data (shuffle and split)
+  /*
+    val path = "/Users/katrintomanek/dev/cprod/training.iob"
+    val data = helpers.readIOBData(path)
+    println("all data: " + data.length)
+    val r: Random = new Random(100)
+    val shuffledData = r.shuffle(data)
+    val num = data.length
+    val per = 2 / 3
+    val train = shuffledData.slice(0, num / 2)
+    val test = shuffledData.slice(num / 2, num)
+    */
 
 }
