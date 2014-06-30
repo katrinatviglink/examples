@@ -1,0 +1,1 @@
+extracted words from the CPROD 1.1 dictionary (brandname, en common and grammatical words) for the sake of reproducing the same features in scala as used by mallet (eosTokFeat.pl script)
